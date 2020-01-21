@@ -1,0 +1,19 @@
+[package]
+name = "actix-reql"
+version = "0.1.0"
+authors = ["Zicklag <zicklag@katharostech.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+actix-rt = {version = "1.0"}
+actix-web = {version = "2.0.0"}
+futures = { version = "0.3", features = ["compat"] }
+reql = {version = "0.0.26"}
+serde = {version = "1.0.102"}
+serde_json = {version = "1.0.44"}
+# tokio = {version = "0.2.6", features = ["full"]}
+lazy_static = "0.1.4"
+reql-types = "*"
+anyhow = "*"
