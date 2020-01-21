@@ -1,7 +1,4 @@
 #![allow(deprecated)]
-#![feature(async_closure)]
-
-// use futures::compat::Future01CompatExt;
 use futures::compat::Stream01CompatExt;
 use futures::stream::{StreamExt, TryStreamExt};
 
@@ -28,25 +25,28 @@ async fn main() -> std::io::Result<()> {
             web::scope("/teapot")
                 .service(
                     web::resource("/{teapot}")
-                        .route(web::get().to(async move |teapot_id, dbconn| {
-                            get_teapot(teapot_id, dbconn).await.unwrap()
+                        .route(web::get().to(|teapot_id, dbconn| {
+                            async move { get_teapot(teapot_id, dbconn).await.unwrap() }
                         }))
-                        .route(web::put().to(async move |teapot_id, teapot_patch, dbconn| {
-                            update_teapot(teapot_id, teapot_patch, dbconn)
-                                .await
-                                .unwrap()
+                        .route(web::put().to(|teapot_id, teapot_patch, dbconn| {
+                            async move {
+                                update_teapot(teapot_id, teapot_patch, dbconn)
+                                    .await
+                                    .unwrap()
+                            }
                         }))
-                        .route(web::delete().to(async move |teapot_id, dbconn| {
-                            delete_teapot(teapot_id, dbconn).await.unwrap()
+                        .route(web::delete().to(|teapot_id, dbconn| {
+                            async move { delete_teapot(teapot_id, dbconn).await.unwrap() }
                         })),
                 )
                 .service(
                     web::resource(["", "/"])
                         .route(
-                            web::get().to(async move |dbconn| get_teapots(dbconn).await.unwrap()),
+                            web::get()
+                                .to(|dbconn| async move { get_teapots(dbconn).await.unwrap() }),
                         )
-                        .route(web::post().to(async move |teapot, dbconn| {
-                            create_teapot(teapot, dbconn).await.unwrap()
+                        .route(web::post().to(|teapot, dbconn| {
+                            async move { create_teapot(teapot, dbconn).await.unwrap() }
                         })),
                 ),
         )
