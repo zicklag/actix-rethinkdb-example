@@ -3,7 +3,7 @@
 
 // use futures::compat::Future01CompatExt;
 use futures::compat::Stream01CompatExt;
-use futures::stream::StreamExt;
+use futures::stream::{StreamExt, TryStreamExt};
 
 use anyhow::Context;
 
@@ -40,11 +40,15 @@ async fn main() -> std::io::Result<()> {
                             delete_teapot(teapot_id, dbconn).await.unwrap()
                         })),
                 )
-                .service(web::resource(["", "/"]).route(
-                    web::post().to(async move |teapot, dbconn| {
-                        create_teapot(teapot, dbconn).await.unwrap()
-                    }),
-                )),
+                .service(
+                    web::resource(["", "/"])
+                        .route(
+                            web::get().to(async move |dbconn| get_teapots(dbconn).await.unwrap()),
+                        )
+                        .route(web::post().to(async move |teapot, dbconn| {
+                            create_teapot(teapot, dbconn).await.unwrap()
+                        })),
+                ),
         )
     })
     .bind("127.0.0.1:8000")?
@@ -90,6 +94,35 @@ async fn create_teapot(
         )),
         None => Err(anyhow::format_err!("Recieved no response from database")),
     }
+}
+
+async fn get_teapots(dbconn: web::Data<rq::Connection>) -> anyhow::Result<impl Responder> {
+    let stream = R
+        .table("teapots")
+        .run::<Teapot>(**dbconn)
+        .context("Failed to send query")?
+        .compat();
+
+    let teapots = stream
+        .map_err(|e| anyhow::format_err!("Error: {}", e))
+        .try_fold(Vec::new(), |mut teapots, doc| {
+            async move {
+                match doc {
+                    Some(rq::Document::Expected(teapot)) => {
+                        teapots.push(teapot);
+                        Ok(teapots)
+                    }
+                    Some(rq::Document::Unexpected(res)) => Err(anyhow::format_err!(
+                        "Recieved unexpected response from DB: {}",
+                        res.to_string()
+                    )),
+                    None => Err(anyhow::format_err!("Got empty document")),
+                }
+            }
+        })
+        .await?;
+
+    Ok(HttpResponse::Ok().json(teapots))
 }
 
 async fn get_teapot(

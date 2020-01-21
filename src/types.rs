@@ -2,6 +2,8 @@ use serde::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Teapot {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
     name: String,
     capacity: i32,
     short_and_stout: bool,
