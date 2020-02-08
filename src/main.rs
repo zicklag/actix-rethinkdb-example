@@ -85,7 +85,7 @@ async fn create_teapot(
 
             Err(anyhow::format_err!(
                 "Errors writing document: {}",
-                status.first_error.unwrap_or("".into())
+                status.first_error.unwrap_or_else(|| "".into())
             ))
         }
         Some(rq::Document::Unexpected(res)) => Err(anyhow::format_err!(
